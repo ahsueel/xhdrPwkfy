@@ -1,7 +1,5 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
 
 # 1. 페이지 설정
 st.set_page_config(
@@ -10,15 +8,13 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. 데이터 가공 및 탑재 (업로드해주신 2025년 12월 실제 데이터 기반)
+# 2. 데이터 가공 및 탑재 (스마트폰 및 PC 2025년 12월 데이터)
 @st.cache_data
 def load_data():
-    # 장르별 총 시청시간 (단위: 만분)
     categories = ["교육", "드라마&영화", "보도", "스포츠", "어린이(유아)", "오락", "정보"]
     
-    # 연령대별 스마트폰 총 시청시간 합계 (남+여 합산 데이터 추출)
+    # 연령대별 스마트폰 총 시청시간 합계 (남+여 합산)
     smartphone_data = {
-        "장르": categories,
         "10대 (13-19세)": [7.6, 7287.4, 3589.3, 956.9, 391.7, 36396.2, 2912.2],
         "20대 (20-29세)": [16.3, 19120.2, 12173.5, 2338.7, 530.3, 97397.9, 8499.9],
         "30대 (30-39세)": [3.2, 46187.2, 37732.9, 5681.5, 1614.5, 135916.9, 14437.2],
@@ -27,14 +23,13 @@ def load_data():
         "60대 이상": [296.4, 41290.5, 164758.7, 5692.8, 1098.4, 134098.1, 20573.4]
     }
     
-    # 기기별 비교 데이터 (스마트폰 vs PC 총합계)
+    # 기기별 비교 데이터
     device_data = {
-        "장르": categories,
         "스마트폰": [600.2, 293269.4, 418720.7, 29649.0, 6102.1, 745146.6, 80868.1],
         "PC": [729.6, 12743.6, 20558.3, 13293.2, 1443.6, 50911.8, 8927.8]
     }
     
-    return pd.DataFrame(smartphone_data), pd.DataFrame(device_data)
+    return pd.DataFrame(smartphone_data, index=categories), pd.DataFrame(device_data, index=categories)
 
 df_age, df_device = load_data()
 
@@ -85,7 +80,7 @@ with col_ins3:
 st.write("")
 st.markdown("---")
 
-# 5. [인터랙티브 분석] 관심 분야 선택 상자 (접근성 극대화)
+# 5. [인터랙티브 분석] 관심 분야 선택 상자
 st.markdown("### 🎯 관심 있는 분석 분야를 선택해 보세요!")
 selected_field = st.selectbox(
     "이 데이터를 통해 어떤 분야의 변화를 보고 싶나요?",
@@ -107,19 +102,8 @@ elif "일자리와 진로" in selected_field:
     col_g1, col_g2 = st.columns([3, 2])
     
     with col_g1:
-        # 기기별 소비 장르 비교 시각화 (도넛 차트 혹은 바 차트)
-        df_melted_device = df_device.melt(id_vars="장르", var_name="기기", value_name="시청시간")
-        fig_device = px.bar(
-            df_melted_device, 
-            x="장르", 
-            y="시청시간", 
-            color="기기",
-            barmode="group",
-            title="장르별 스마트폰 vs PC 시청시간 비교",
-            color_discrete_map={"스마트폰": "#4F46E5", "PC": "#10B981"},
-            template="plotly_white"
-        )
-        st.plotly_chart(fig_device, use_container_width=True)
+        # 스트림릿 내장 바 차트로 변경 (추가 설치 불필요!)
+        st.bar_chart(df_device)
         
     with col_g2:
         st.markdown("""
@@ -138,25 +122,15 @@ elif "세대 갈등과 소통" in selected_field:
     col_g1, col_g2 = st.columns([3, 2])
     
     with col_g1:
-        # 연령대별 장르 소비 비중 (열지도 혹은 라인 차트)
-        fig_age = go.Figure()
-        for col in df_age.columns[1:]:
-            fig_age.add_trace(go.Scatter(x=df_age["장르"], y=df_age[col], mode='lines+markers', name=col))
-        
-        fig_age.update_layout(
-            title="연령대별 스마트폰 장르별 시청시간 흐름",
-            xaxis_title="장르",
-            yaxis_title="시청시간 (만분)",
-            template="plotly_white"
-        )
-        st.plotly_chart(fig_age, use_container_width=True)
+        # 스트림릿 내장 라인 차트로 변경 (추가 설치 불필요!)
+        st.line_chart(df_age)
         
     with col_g2:
         st.markdown("""
         #### 🔍 핵심 데이터 해석 (중고등학생 눈높이 설명)
         * **"우리 부모님이 뉴스를 계속 보시는 이유"**
             * 50대와 60대 이상의 스마트폰 사용 시간에서 압도적인 1위는 바로 **'보도(뉴스)'**입니다. 
-            * 반면 10대와 20대는 뉴스를의 거의 보지 않고 **'오락(예능, 숏폼)'**과 **'드라마&영화'**에만 집중되어 있죠.
+            * 반면 10대와 20대는 뉴스를 거의 보지 않고 **'오락(예능, 숏폼)'**과 **'드라마&영화'**에만 집중되어 있죠.
         * **소통의 지혜 💡**
             * 명절이나 저녁 시간에 할머니, 할아버지와 대화가 안 통한다고 느껴졌나요? 그건 머릿속을 가득 채우고 있는 **미디어 데이터의 성격**이 아예 다르기 때문입니다.
             * 부모님 세대는 세상을 '뉴스'를 통해 진지하게 파악하고 있고, 청소년 세대는 세상 트렌드를 '유튜브'나 '밈'을 통해 즐겁게 받아들입니다. 서로를 틀리다고 하기보다, 관심사가 이렇게 다르다는 걸 인정하는 것부터가 소통의 시작입니다.
@@ -168,16 +142,8 @@ elif "기업 마케팅과 비즈니스" in selected_field:
     col_g1, col_g2 = st.columns([3, 2])
     
     with col_g1:
-        # 3D 파이 차트처럼 깔끔한 장르별 점유율 차트
-        fig_pie = px.pie(
-            df_device, 
-            values="스마트폰", 
-            names="장르", 
-            title="스마트폰 미디어 시장 장르별 파이 크기 (점유율)",
-            color_discrete_sequence=px.colors.sequential.RdBu,
-            hole=0.4
-        )
-        st.plotly_chart(fig_pie, use_container_width=True)
+        # 스마트폰 장르 비율 비교 바 차트로 대체
+        st.bar_chart(df_device["스마트폰"])
         
     with col_g2:
         st.markdown("""
